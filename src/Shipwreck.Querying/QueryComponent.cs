@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Shipwreck.Querying
 {
+    /// <summary>
+    /// 検索クエリーに含まれるコンポーネントを表します。
+    /// </summary>
     public sealed class QueryComponent : IEquatable<QueryComponent>
     {
         private sealed class QueryParser
@@ -160,17 +163,42 @@ namespace Shipwreck.Querying
             LastIndex = lastIndex;
         }
 
+        /// <summary>
+        /// コンポーネントの処理方法を取得します。
+        /// </summary>
         public ComponentOperator Operator { get; }
 
+        /// <summary>
+        /// コンポーネントの種別を取得します。
+        /// </summary>
         public string Prefix { get; }
+
+        /// <summary>
+        /// コンポーネントで指定された文字列を取得します。
+        /// </summary>
         public string Value { get; }
 
+        /// <summary>
+        /// コンポーネントの先頭の文字列内の<c>0</c>から始まるインデックスを取得します。
+        /// </summary>
         public int StartIndex { get; }
+
+        /// <summary>
+        /// コンポーネントの末尾の文字列内の<c>0</c>から始まるインデックスを取得します。
+        /// </summary>
         public int LastIndex { get; }
 
+        /// <summary>
+        /// コンポーネントの文字数を取得します。
+        /// </summary>
         public int Length
             => LastIndex - StartIndex + 1;
 
+        /// <summary>
+        /// 指定した文字列に含まれるコンポーネントのシーケンスを返します。
+        /// </summary>
+        /// <param name="query">検索文字列。</param>
+        /// <returns>含まれるコンポーネントのシーケンス。</returns>
         public static IEnumerable<QueryComponent> Parse(string query)
             => string.IsNullOrWhiteSpace(query) ? Enumerable.Empty<QueryComponent>() : new QueryParser().Parse(query);
 
