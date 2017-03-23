@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Shipwreck.Querying
 {
@@ -83,7 +81,7 @@ namespace Shipwreck.Querying
             var r = source;
             foreach (var g in query.GroupBy(q => new
             {
-                q.Condition,
+                q.Operator,
                 Provider = providers.FirstOrDefault(p => p.IsSupported(q.Prefix))
             }))
             {
@@ -91,30 +89,30 @@ namespace Shipwreck.Querying
                         context,
                         r, g.Key.Provider
                             ?? (g.All(c => string.IsNullOrEmpty(c.Prefix)) ? defaultProvider : null),
-                        g.Key.Condition,
+                        g.Key.Operator,
                         g.Select(c => c.Value).Distinct());
             }
 
             return r;
         }
 
-        private static IQueryable<TEntity> Filter<TContext, TEntity>(TContext context, IQueryable<TEntity> source, IQueryProvider<TContext, TEntity> provider, bool? condition, IEnumerable<string> values)
+        private static IQueryable<TEntity> Filter<TContext, TEntity>(TContext context, IQueryable<TEntity> source, IQueryProvider<TContext, TEntity> provider, ComponentOperator @operator, IEnumerable<string> values)
         {
             var s = source;
             if (provider == null)
             {
-                return condition == false ? source : source.Where(_ => false);
+                return @operator == ComponentOperator.Excluded ? source : source.Where(_ => false);
             }
-            switch (condition)
+            switch (@operator)
             {
-                case true:
+                case ComponentOperator.Required:
                     foreach (var v in values)
                     {
                         s = provider.Filter(context, s, Enumerable.Repeat(v, 1));
                     }
                     return s;
 
-                case false:
+                case ComponentOperator.Excluded:
                     return provider.Exclude(context, s, values);
 
                 default:
@@ -127,5 +125,4 @@ namespace Shipwreck.Querying
             return Expression.Lambda<Func<TModel1, bool>>(Replace(predicate.Body, predicate.Parameters[0], entitySelector.Body), entitySelector.Parameters[0]);
         }
     }
-
 }

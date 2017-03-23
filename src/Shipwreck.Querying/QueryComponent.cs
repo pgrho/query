@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Shipwreck.Querying
 {
-    public sealed class QueryComponent
+    public sealed class QueryComponent : IEquatable<QueryComponent>
     {
         private sealed class QueryParser
         {
@@ -14,7 +13,7 @@ namespace Shipwreck.Querying
             private bool _IsQuoted;
             private string _Prefix;
             private StringBuilder _Buffer;
-            private bool? _Condition;
+            private ComponentOperator _Operator;
             private int _StartIndex;
 
             public IEnumerable<QueryComponent> Parse(string query)
@@ -24,8 +23,8 @@ namespace Shipwreck.Querying
                     yield break;
                 }
 
-                var position = 0;
-                ClearState(0);
+                var position = -1;
+                ClearState(-1);
 
                 foreach (var c in query)
                 {
@@ -36,11 +35,11 @@ namespace Shipwreck.Querying
                         switch (c)
                         {
                             case '+':
-                                _Condition = true;
+                                _Operator = ComponentOperator.Required;
                                 continue;
 
                             case '-':
-                                _Condition = false;
+                                _Operator = ComponentOperator.Excluded;
                                 continue;
                         }
                     }
@@ -50,7 +49,7 @@ namespace Shipwreck.Querying
                         {
                             if (_Buffer.Length > 0)
                             {
-                                yield return CreateQueryComponent(position);
+                                yield return CreateQueryComponent(position - 1);
                             }
                             ClearState(position);
                         }
@@ -89,7 +88,7 @@ namespace Shipwreck.Querying
                             }
                             else
                             {
-                                yield return CreateQueryComponent(position);
+                                yield return CreateQueryComponent(position - 1);
                                 ClearState(position);
                             }
                         }
@@ -126,7 +125,7 @@ namespace Shipwreck.Querying
             }
 
             private bool IsEmpty()
-                => _Condition == null && _IsPrefix && _Buffer.Length == 0;
+                => _Operator == ComponentOperator.None && _IsPrefix && _Buffer.Length == 0;
 
             private static bool IsWhitespace(char c)
                 => char.IsWhiteSpace(c);
@@ -134,7 +133,7 @@ namespace Shipwreck.Querying
             private void ClearState(int position)
             {
                 _StartIndex = position + 1;
-                _Condition = null;
+                _Operator = ComponentOperator.None;
                 _Prefix = null;
                 _IsPrefix = true;
                 _IsQuoted = false;
@@ -149,19 +148,19 @@ namespace Shipwreck.Querying
             }
 
             private QueryComponent CreateQueryComponent(int position)
-                => new QueryComponent(_Condition, _Prefix, _Buffer.ToString(), _StartIndex, position);
+                => new QueryComponent(_Operator, _Prefix, _Buffer.ToString(), _StartIndex, position);
         }
 
-        public QueryComponent(bool? condition, string prefix, string value, int startIndex, int lastIndex)
+        public QueryComponent(ComponentOperator condition, string prefix, string value, int startIndex, int lastIndex)
         {
-            Condition = condition;
-            Prefix = prefix;
-            Value = value;
+            Operator = condition;
+            Prefix = prefix ?? string.Empty;
+            Value = value ?? string.Empty;
             StartIndex = startIndex;
             LastIndex = lastIndex;
         }
 
-        public bool? Condition { get; }
+        public ComponentOperator Operator { get; }
 
         public string Prefix { get; }
         public string Value { get; }
@@ -174,5 +173,30 @@ namespace Shipwreck.Querying
 
         public static IEnumerable<QueryComponent> Parse(string query)
             => string.IsNullOrWhiteSpace(query) ? Enumerable.Empty<QueryComponent>() : new QueryParser().Parse(query);
+
+        public static bool operator ==(QueryComponent left, QueryComponent right)
+            => (left == (object)null && right == (object)null)
+                || ((left != (object)null && right != (object)null)
+                    && left.Operator == right.Operator
+                    && left.Prefix == right.Prefix
+                    && left.Value == right.Value
+                    && left.StartIndex == right.StartIndex
+                    && left.LastIndex == right.LastIndex);
+
+        public static bool operator !=(QueryComponent left, QueryComponent right)
+            => !(left == right);
+
+        public override bool Equals(object obj)
+            => this == obj as QueryComponent;
+
+        public bool Equals(QueryComponent other)
+            => this == other;
+
+        public override int GetHashCode()
+            => ((int)Operator)
+                ^ (((Prefix?.GetHashCode() & 0x7f) << 4) ?? 0)
+                ^ (((Value?.GetHashCode() & 0x7f) << 11) ?? 0)
+                ^ ((StartIndex & 0x7f) << 18)
+                ^ ((LastIndex & 0x7f) << 25);
     }
 }

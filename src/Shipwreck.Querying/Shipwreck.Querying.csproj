@@ -34,6 +34,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ComponentOperator.cs" />
     <Compile Include="IQueryProvider.cs" />
     <Compile Include="QueryComponent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
