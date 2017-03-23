@@ -1,0 +1,14 @@
+﻿<package >
+  <metadata>
+    <id>Shipwreck.Querying.TypeScript</id>
+    <version>0.0.1-pre</version>
+    <title>$title$</title>
+    <authors>shipwreck.jp</authors>
+    <owners>shipwreck.jp</owners>
+    <description>Search Query Parser</description>
+    <projectUrl>https://github.com/pgrho/query</projectUrl>
+  </metadata>
+  <files>
+    <file src="Shipwreck.Querying.ts" target="Content\Scripts" />
+  </files>
+</package>
