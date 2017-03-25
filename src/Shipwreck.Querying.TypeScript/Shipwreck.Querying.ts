@@ -178,5 +178,45 @@
             return query === null || query === undefined || /^[\s\r\n\t]+$/.test(query) ? []
                 : new QueryParser().parse(query);
         }
+
+        public static operatorString(operator: ComponentOperator) {
+            switch (operator) {
+                case ComponentOperator.Required:
+                    return "+";
+
+                case ComponentOperator.Excluded:
+                    return "-";
+            }
+            return "";
+        }
+
+        public toString(): string {
+            var sb = QueryComponent.operatorString(this.operator);
+
+            var l = sb.length;
+            sb += this.prefix;
+            if (l < sb.length) {
+                sb += ":";
+            }
+
+            l = sb.length;
+            var q = false;
+            for (var i = 0; i < this.value.length; i++) {
+                var c = this.value.charAt(i);
+                if (!q) {
+                    if (/^[\r\n\t\s]$/.test(c)) {
+                        sb = sb.substr(0, l) + "\"" + sb.substr(l);
+                        q = true;
+                    }
+                }
+                sb += c;
+            }
+
+            if (q) {
+                sb += "\"";
+            }
+
+            return sb;
+        }
     }
 }

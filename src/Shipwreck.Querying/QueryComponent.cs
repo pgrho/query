@@ -226,5 +226,49 @@ namespace Shipwreck.Querying
                 ^ (((Value?.GetHashCode() & 0x7f) << 11) ?? 0)
                 ^ ((StartIndex & 0x7f) << 18)
                 ^ ((LastIndex & 0x7f) << 25);
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder(Prefix.Length + Value.Length + 4);
+            switch (Operator)
+            {
+                case ComponentOperator.Required:
+                    sb.Append('+');
+                    break;
+
+                case ComponentOperator.Excluded:
+                    sb.Append('-');
+                    break;
+            }
+
+            var l = sb.Length;
+            sb.Append(Prefix);
+            if (l < sb.Length)
+            {
+                sb.Append(':');
+            }
+
+            l = sb.Length;
+            var q = false;
+            foreach (var c in Value)
+            {
+                if (!q)
+                {
+                    if (char.IsWhiteSpace(c))
+                    {
+                        sb.Insert(l, '"');
+                        q = true;
+                    }
+                }
+                sb.Append(c);
+            }
+
+            if (q)
+            {
+                sb.Append('"');
+            }
+
+            return sb.ToString();
+        }
     }
 }
