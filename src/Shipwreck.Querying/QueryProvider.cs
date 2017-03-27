@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Shipwreck.Querying
@@ -28,6 +29,9 @@ namespace Shipwreck.Querying
                 return base.Visit(node);
             }
         }
+
+        private static readonly MethodInfo QueryableAny
+            = typeof(Queryable).GetMethods().Single(m => m.Name == nameof(Queryable.Any) && m.GetParameters().Length == 2);
 
         private static Expression Replace(Expression expression, Expression currentValue, Expression newValue)
             => new ReplaceExpressionVisitor(currentValue, newValue).Visit(expression);
@@ -120,9 +124,21 @@ namespace Shipwreck.Querying
             }
         }
 
-        protected static Expression<Func<TModel1, bool>> CreatePredicate<TModel1, TModel2>(Expression<Func<TModel1, TModel2>> entitySelector, Expression<Func<TModel2, bool>> predicate)
-        {
-            return Expression.Lambda<Func<TModel1, bool>>(Replace(predicate.Body, predicate.Parameters[0], entitySelector.Body), entitySelector.Parameters[0]);
-        }
+        protected static Expression<Func<TModel1, bool>> CreatePredicate<TModel1, TModel2>(
+                Expression<Func<TModel1, TModel2>> entitySelector,
+                Expression<Func<TModel2, bool>> predicate)
+            => Expression.Lambda<Func<TModel1, bool>>(
+                    Replace(predicate.Body, predicate.Parameters[0], entitySelector.Body),
+                    entitySelector.Parameters[0]);
+
+        protected static Expression<Func<TModel1, bool>> CreatePredicate<TModel1, TModel2>(
+                Expression<Func<TModel1, IQueryable<TModel2>>> querySelector,
+                Expression<Func<TModel2, bool>> predicate)
+            => Expression.Lambda<Func<TModel1, bool>>(
+                    Expression.Call(
+                            QueryableAny.MakeGenericMethod(typeof(TModel2)),
+                            querySelector.Body,
+                            Expression.Constant(predicate)),
+                    querySelector.Parameters[0]);
     }
 }
