@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace Shipwreck.Querying
 {
-    public abstract class QueryProvider
+    public abstract partial class QueryProvider
     {
         private sealed class ReplaceExpressionVisitor : ExpressionVisitor
         {
@@ -140,5 +140,134 @@ namespace Shipwreck.Querying
                             querySelector.Body,
                             Expression.Constant(predicate)),
                     querySelector.Parameters[0]);
+
+        #region CreateComparison
+
+        protected static Expression<Func<T, bool>> CreateComparison<T, TProperty, TTryParser>(Expression<Func<T, TProperty>> propertySelector, string value)
+            where TTryParser : struct, ITryParser<TProperty>
+        {
+            Expression<Func<T, bool>> result;
+            if (TryCreateComparison<T, TProperty, TTryParser>(propertySelector, value, out result))
+            {
+                return result;
+            }
+            return _ => false;
+        }
+
+        protected static Expression<Func<T, bool>> CreateComparison<T, TProperty, TTryParser>(Expression<Func<T, TProperty?>> propertySelector, string value)
+            where TProperty : struct
+            where TTryParser : struct, ITryParser<TProperty>
+        {
+            Expression<Func<T, bool>> result;
+            if (TryCreateComparison<T, TProperty, TTryParser>(propertySelector, value, out result))
+            {
+                return result;
+            }
+            return _ => false;
+        }
+
+        private static bool TryCreateComparison<T, TProperty, TTryParser>(LambdaExpression propertySelector, string value, out Expression<Func<T, bool>> result)
+            where TTryParser : struct, ITryParser<TProperty>
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                var op = ExpressionType.Equal;
+                var start = 0;
+                if (value.Length > 1)
+                {
+                    if (value[0] == '<')
+                    {
+                        if (value.Length > 2 && value[1] == '=')
+                        {
+                            op = ExpressionType.LessThanOrEqual;
+                            start = 2;
+                        }
+                        else
+                        {
+                            op = ExpressionType.LessThan;
+                            start = 1;
+                        }
+                    }
+                    else if (value[0] == '>')
+                    {
+                        if (value.Length > 2 && value[1] == '=')
+                        {
+                            op = ExpressionType.GreaterThanOrEqual;
+                            start = 2;
+                        }
+                        else
+                        {
+                            op = ExpressionType.GreaterThan;
+                            start = 1;
+                        }
+                    }
+                    else if (value.Length > 2 && value[0] == '!' && value[1] == '=')
+                    {
+                        op = ExpressionType.NotEqual;
+                        start = 2;
+                    }
+                }
+
+                TProperty i;
+                if (default(TTryParser).TryParse(start == 0 ? value : value.Substring(start), out i))
+                {
+                    var left = propertySelector.Body;
+                    if (left.Type != typeof(TProperty))
+                    {
+                        left = Expression.Convert(left, typeof(TProperty));
+                    }
+
+                    result = Expression.Lambda<Func<T, bool>>(
+                        Expression.MakeBinary(op, left, Expression.Constant(i)),
+                        propertySelector.Parameters
+                        );
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+        #endregion CreateComparison
+
+
+        public static Expression<Func<TEntity, int>> CreateMatchRankSelector<TContext, TEntity>(TContext context, IEnumerable<QueryComponent> query, IEnumerable<IQueryProvider<TContext, TEntity>> providers, IQueryOrderProvider<TContext, TEntity> defaultProvider)
+        {
+            Expression<Func<TEntity, int>> sum = null;
+            foreach (var qc in query)
+            {
+                Expression<Func<TEntity, MatchRank>> pred;
+                if (string.IsNullOrEmpty(qc.Prefix))
+                {
+                    pred = defaultProvider?.GetMatchRank(context, qc.Value);
+                }
+                else
+                {
+                    pred = providers.OfType<IQueryOrderProvider<TContext, TEntity>>().FirstOrDefault(p => p.IsSupported(qc.Prefix))?.GetMatchRank(context, qc.Value);
+                }
+
+                if (pred != null)
+                {
+                    if (sum == null)
+                    {
+                        sum = Expression.Lambda<Func<TEntity, int>>(Expression.Convert(pred.Body, typeof(int)), pred.Parameters);
+                    }
+                    else
+                    {
+                        sum = Expression.Lambda<Func<TEntity, int>>(
+                                Expression.Add(
+                                    sum.Body,
+                                    Expression.Convert(
+                                        Replace(pred.Body, pred.Parameters[0], sum.Parameters[0]),
+                                        typeof(int))),
+                                sum.Parameters);
+                    }
+                }
+            }
+
+            return sum;
+        }
+
     }
 }

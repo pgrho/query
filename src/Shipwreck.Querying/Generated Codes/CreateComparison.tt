@@ -1,0 +1,46 @@
+<#@ template language="C#" debug="True" #>
+<#@ output extension="cs" #>
+<#
+var types = new [] {
+	"Byte", "SByte",
+	"Int16", "UInt16",
+	"Int32", "UInt32",
+	"Int64", "UInt64",
+	"Single", "Double",
+	"Decimal", "DateTime"
+};
+#>
+using System;
+using System.Linq.Expressions;
+
+namespace Shipwreck.Querying
+{
+<#
+foreach (var T in types)
+{
+#>
+	public struct <#= T #>TryParser : ITryParser<<#= T #>>
+	{
+		public bool TryParse(string s, out <#= T #> result)
+			=> <#= T #>.TryParse(s, out result);
+	}
+<#
+}
+#>
+	partial class QueryProvider
+	{
+<#
+foreach (var T in types)
+{
+#>
+
+		protected static Expression<Func<T, bool>> CreateComparison<T>(Expression<Func<T, <#= T #>>> propertySelector, string value)
+			=> CreateComparison<T, <#= T #>, <#= T #>TryParser>(propertySelector, value);
+
+		protected static Expression<Func<T, bool>> CreateComparison<T>(Expression<Func<T, <#= T #>?>> propertySelector, string value)
+			=> CreateComparison<T, <#= T #>, <#= T #>TryParser>(propertySelector, value);
+<#
+}
+#>
+	}
+}
