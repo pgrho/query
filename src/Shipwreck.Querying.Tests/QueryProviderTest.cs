@@ -1,13 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Linq;
+﻿ using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using Xunit;
 
 namespace Shipwreck.Querying
 {
-
-    [TestClass]
     public class QueryProviderTest
     {
         #region CreateMatchRankSelectorTest
@@ -37,7 +35,7 @@ namespace Shipwreck.Querying
                 => prefix == "1";
         }
 
-        [TestMethod]
+        [Fact]
         public void CreateMatchRankSelectorTest()
         {
             var qop = new CreateMatchRankSelectorTestProvider();
