@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -33,7 +34,7 @@ namespace Shipwreck.Querying
         private static readonly MethodInfo QueryableAny
             = typeof(Queryable).GetMethods().Single(m => m.Name == nameof(Queryable.Any) && m.GetParameters().Length == 2);
 
-        private static Expression Replace(Expression expression, Expression currentValue, Expression newValue)
+        protected static Expression Replace(Expression expression, Expression currentValue, Expression newValue)
             => new ReplaceExpressionVisitor(currentValue, newValue).Visit(expression);
 
         private readonly Regex _Pattern;
@@ -41,7 +42,13 @@ namespace Shipwreck.Querying
         protected QueryProvider(params string[] prefixes)
         {
             _Pattern = new Regex("^(" + string.Join("|", prefixes.Select(Regex.Escape)) + ")$", RegexOptions.IgnoreCase);
+            Prefixes = Array.AsReadOnly(prefixes.ToArray());
         }
+
+        public ReadOnlyCollection<string> Prefixes { get; }
+
+        public virtual string DisplayName
+            => Regex.Replace(GetType().Name, "(?<=.)" + nameof(QueryProvider) + "$", string.Empty);
 
         public bool IsSupported(string prefix)
               => prefix != null && _Pattern.IsMatch(prefix);
@@ -231,7 +238,6 @@ namespace Shipwreck.Querying
 
         #endregion CreateComparison
 
-
         public static Expression<Func<TEntity, int>> CreateMatchRankSelector<TContext, TEntity>(TContext context, IEnumerable<QueryComponent> query, IEnumerable<IQueryProvider<TContext, TEntity>> providers, IQueryOrderProvider<TContext, TEntity> defaultProvider)
         {
             Expression<Func<TEntity, int>> sum = null;
@@ -268,6 +274,5 @@ namespace Shipwreck.Querying
 
             return sum;
         }
-
     }
 }

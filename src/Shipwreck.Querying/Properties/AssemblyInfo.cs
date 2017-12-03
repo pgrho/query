@@ -32,7 +32,7 @@ using System.Runtime.InteropServices;
 // すべての値を指定するか、下のように '*' を使ってビルドおよびリビジョン番号を 
 // 既定値にすることができます:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.0.4.*")]
-[assembly: AssemblyFileVersion("0.0.4.0")]
-[assembly: AssemblyInformationalVersion("0.0.4-pre")]
+[assembly: AssemblyVersion("0.0.5.*")]
+[assembly: AssemblyFileVersion("0.0.5.0")]
+[assembly: AssemblyInformationalVersion("0.0.5-pre")]
 [assembly: InternalsVisibleTo("Shipwreck.Querying.Tests")]
