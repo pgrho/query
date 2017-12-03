@@ -32,7 +32,11 @@ namespace Shipwreck.Querying
         }
 
         private static readonly MethodInfo QueryableAny
+#if NET451
             = typeof(Queryable).GetMethods().Single(m => m.Name == nameof(Queryable.Any) && m.GetParameters().Length == 2);
+#else
+            = typeof(Queryable).GetTypeInfo().GetDeclaredMethods(nameof(Queryable.Any)).Single(m => m.GetParameters().Length == 2);
+#endif
 
         protected static Expression Replace(Expression expression, Expression currentValue, Expression newValue)
             => new ReplaceExpressionVisitor(currentValue, newValue).Visit(expression);
