@@ -4,9 +4,10 @@
     <TargetFrameworks>net451;netstandard1.3</TargetFrameworks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Authors>Shshipwreck.jp</Authors>
-    <Version>0.0.5-pre</Version>
+    <Version>0.0.6-pre</Version>
     <Company />
     <Description>Search Query Parser</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/pgrho/query</PackageProjectUrl>
   </PropertyGroup>
 

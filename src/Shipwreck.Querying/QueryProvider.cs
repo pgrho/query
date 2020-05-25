@@ -32,7 +32,7 @@ namespace Shipwreck.Querying
         }
 
         private static readonly MethodInfo QueryableAny
-#if NET451
+#if !NETSTANDARD1_3
             = typeof(Queryable).GetMethods().Single(m => m.Name == nameof(Queryable.Any) && m.GetParameters().Length == 2);
 #else
             = typeof(Queryable).GetTypeInfo().GetDeclaredMethods(nameof(Queryable.Any)).Single(m => m.GetParameters().Length == 2);
@@ -46,7 +46,7 @@ namespace Shipwreck.Querying
         protected QueryProvider(params string[] prefixes)
         {
             _Pattern = new Regex("^(" + string.Join("|", prefixes.Select(Regex.Escape)) + ")$", RegexOptions.IgnoreCase);
-            Prefixes = Array.AsReadOnly(prefixes.ToArray());
+            Prefixes = new ReadOnlyCollection<string>(prefixes.ToArray());
         }
 
         public ReadOnlyCollection<string> Prefixes { get; }
